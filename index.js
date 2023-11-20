@@ -1,22 +1,31 @@
 const express = require("express");
 const http = require("http");
-const socketIo = require("socket.io");
+const socketio = require("socket.io");
 const cors = require('cors');
 const redis = require("redis");
 const utils = require("./utils")
 
 const app = express();
-app.use(cors)
-const server = http.createServer(app)
-const io = socketIo(server)
+const server = app.listen( 3000, () => {
+    console.log("Server is now running on port 3000..")
+})
+const io = socketio(server)
+
+// redis client connection
 const redis_client = redis.createClient({
-    host: '127.0.0.1',
+    host: 'localhost',
     port: 6379
+})
+redis_client.connect().then(() => {
+    console.log('Connected to Redis');
+}).catch((err) => {
+    console.log(err.message);
 })
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/templates/index.html');
 });
+
 
 io.on('connection', (socket) => {
 
@@ -58,10 +67,5 @@ io.on('connection', (socket) => {
     })
 })
 
-
-app.listen( 3000, () => {
-    console.log("Server is now running on port 3000..")
-}
-)
 
 

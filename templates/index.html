@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe</title>
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <style>
@@ -29,25 +30,40 @@
             outline: none;
         }
     </style>
-    <section>
-        <h3>Create Game</h3>
-        <input placeholder="Enter username">
-        <button id="startGame">Start Game</button>
+
+    <section id="start">
+        <h3>Create Game</h3> 
+        <input type="text" id="username" placeholder="Enter username" required>
+        <button id="startGame">Start Game</button>  
     </section>
+
+    <section id="share" hidden>
+        <h3>
+            Game ID:
+            <span id="gameId"></span>
+        </h3> 
+        <p>
+            Waiting for player to join
+        </p>
+        <input type="text"> 
+    </section>
+
+    <section id="join" hidden>
+        <input type="text" id="gameCode" placeholder="Enter Game ID" required>
+        <input type="text" id="username" placeholder="Enter username" required>
+        <button id="joinGame">Join Game</button>  
+    </section>
+
+
     <section id="board" hidden>
         <button id="r1c1">X</button><button id="r1c2"></button><button id="r1c3"></button>
         <button id="r2c1">O</button><button id="r2c2">X</button><button id="r2c3">O</button>
         <button id="r3c1">X</button><button id="r3c2">O</button><button id="r3c3">O</button>
     </section>
-
+  
     <script>
         const socket = io('http://localhost:3000');
         
-        socket.on('connect', () => {
-            console.log('Connected to server!');
-            // Additional code to run after the connection is established
-        });
-
         let gameId = "";
 
         function createGame(username){
@@ -62,6 +78,8 @@
 
         socket.on('gameCreated', (data) => {
             gameId = data.gameId;
+            $('#start').attr("hidden", true)
+            $('#share').removeAttr('hidden')
             console.log(`Game created with code: ${gameId}`);
         });
 
@@ -80,22 +98,38 @@
             console.log(`Move made: ${JSON.stringify(data)}`);
         });
 
-        // Example: Handle button click to make a move
-        document.getElementById('startGame').addEventListener('click', (event) => {
-                let username = "nerdthejohn";
-                createGame(username)
-                
-            }
-        );
 
-        document.getElementById('board').addEventListener('click', (event) => {
-            if (event.target.tagName === 'BUTTON') {
-                const cellId = event.target.id;
+        $(document).ready(function() {
+            function getQueryParam(name) {
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get(name);
+            }
+
+            function preJoinGame() {
+                const gameId = getQueryParam('id');
+                // Check if the query parameter is present and not null
+                if (gameId !== null) {
+                    $('#start').attr("hidden", true)
+                    $('#join').removeAttr('hidden')
+                    $('#gameCode').val(gameId);
+                }
+            }
+
+            preJoinGame()
+
+            $('#startGame').on('click', () => {
+                let username = document.getElementById('username').value;
+                createGame(username)
+            }
+        )
+            $('#board').on('click', 'button', (event) => {
+                const cellId = this.id;
                 socket.emit('makeMove', { gameId, cellId });
                 console.log(cellId);
-                
-            }
+            });
         });
+
+
 
         
     </script>
