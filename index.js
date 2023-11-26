@@ -34,29 +34,30 @@ io.on('connection', (socket) => {
         let gameId = utils.generateGameId();
         let username = data.username;
         socket.join(gameId);
-        socket.emit('gameCreated', { gameId });
         redis_client.set(gameId, JSON.stringify(
             { player1: {username: username, socketId: socket.id }}
         ));
+        socket.emit('gameCreated', { gameId });
     });
 
     // join an existing game
-    socket.on('joinGame', (data) => {
+    socket.on('joinGame', async (data) => {
         const gameId = data.gameId;
         const username = data.username
         socket.join(gameId);
-        redis_client.get(gameId, (err, gameData) => {
-            if (err) throw err;
+        console.log(gameId, username);
 
-            if (gameData) {
-                const data = JSON.parse(gameData);
-                data.player2 = { username: username, socketId: socket.id};
-                redis_client.set(gameId, JSON.stringify(data));
-                io.to(gameId).emit('gameJoined', { gameId, username });
-            } else {
-                socket.emit('invalidGame');
-            }
-        })
+        const gameData = await redis_client.get(gameId);
+
+        if (gameData) {
+            console.log("Game Data", gameData)
+            const data = JSON.parse(gameData);
+            data.player2 = { username: username, socketId: socket.id};
+            redis_client.set(gameId, JSON.stringify(data));
+            io.to(gameId).emit('gameJoined', { gameId, username });
+        } else {
+            socket.emit('invalidGame');
+        }
     });
 
     // make a move on the board

@@ -5,17 +5,39 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/js/all.min.js" ></script>
 </head>
+
 <body>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+
         body {
+            font-family: 'Space Mono', monospace;
             background: #222222;
             padding: auto;
         }
+
+        .page{
+            margin: 50px auto;
+        }
+
+        #copyGameUrl {
+            background-color: #fff;
+            padding: 10px 12px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #copyGameUrl .fa-copy {
+            cursor: pointer;
+        }
+
         #board {
-            margin: 40px auto;
             width: 450px;
         }
         #board button {
@@ -29,40 +51,93 @@
             border: none;
             outline: none;
         }
+
+        #start,
+        #share
+        {
+            max-width: 400px;
+        }
+
+        #start h2 {
+            text-align: center;
+            color: #fff;
+        }
+
+        #start input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            outline: none;
+            text-decoration: none;
+            border: 2px solid transparent;
+            font-family: 'Space Mono', monospace;
+        }
+
+
+        #start input:focus-within{
+            outline: none;
+            border: 2px solid green;
+        }
+
+
+        #start button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+        }
+
+        #start button:hover {
+            background-color: #45a049;
+        }
+
+        #share p{
+            color: #fff;
+        }
+
+        
     </style>
 
-    <section id="start">
-        <h3>Create Game</h3> 
+    <section id="start" class="page">
+        <h2>Tic-Tac-Toe</h2> 
         <input type="text" id="username" placeholder="Enter username" required>
-        <button id="startGame">Start Game</button>  
+        <button id="startGame">Start Game ></button>  
+
     </section>
 
-    <section id="share" hidden>
-        <h3>
-            Game ID:
-            <span id="gameId"></span>
-        </h3> 
-        <p>
-            Waiting for player to join
-        </p>
-        <input type="text"> 
+    <section id="share" class="page" hidden>
+       
+        <p>Copy and share URL to join game</p>
+        <div id="copyGameUrl">
+            <span id="copyUrl">https://localhost:3000?id=3ae2l</span>
+            <i class="fa-regular fa-copy" id="copy"></i>
+        </div>
+       
+  
+       
     </section>
 
-    <section id="join" hidden>
+    <section id="join" class="page" hidden>
         <input type="text" id="gameCode" placeholder="Enter Game ID" required>
-        <input type="text" id="username" placeholder="Enter username" required>
+        <input type="text" id="username_2" placeholder="Enter username" required>
         <button id="joinGame">Join Game</button>  
     </section>
 
 
-    <section id="board" hidden>
+    <section id="board" class="page" hidden>
         <button id="r1c1">X</button><button id="r1c2"></button><button id="r1c3"></button>
         <button id="r2c1">O</button><button id="r2c2">X</button><button id="r2c3">O</button>
         <button id="r3c1">X</button><button id="r3c2">O</button><button id="r3c3">O</button>
     </section>
   
     <script>
-        const socket = io('http://localhost:3000');
+        const url = "http://localhost:3000"
+        const socket = io(url);
         
         let gameId = "";
 
@@ -70,22 +145,24 @@
             socket.emit('createGame', { username: username } );
         }
 
-        function joinGame(){
-            let username = document.getElementById('username').value;
-            let gameId = document.getElementById('gameId').value;
+        function joinGame(username, gameId){
             socket.emit('joinGame', { username: username, gameId: gameId })
         }
 
         socket.on('gameCreated', (data) => {
             gameId = data.gameId;
-            $('#start').attr("hidden", true)
-            $('#share').removeAttr('hidden')
+            $('.page').hide()
+            $('#share').show()
+            $('copyUrl').text = `${url}?id=${gameId}`;
             console.log(`Game created with code: ${gameId}`);
         });
 
         socket.on('gameJoined', (data) => {
             username = data.username
             gameId = data.gameId;
+
+            $('.page').hide()
+            $('#board').show()
             console.log(`${username} joined game with code: ${gameId}`);
         });
 
@@ -105,28 +182,45 @@
                 return urlParams.get(name);
             }
 
-            function preJoinGame() {
+            function PageLoad() {
                 const gameId = getQueryParam('id');
                 // Check if the query parameter is present and not null
                 if (gameId !== null) {
-                    $('#start').attr("hidden", true)
-                    $('#join').removeAttr('hidden')
+                    $('.page').hide()
+                    $('#join').show()
                     $('#gameCode').val(gameId);
+                } else {
+                    $('.page').hide()
+                    $('#start').show()
                 }
             }
 
-            preJoinGame()
+            PageLoad()
 
             $('#startGame').on('click', () => {
                 let username = document.getElementById('username').value;
                 createGame(username)
-            }
-        )
+            });
+
+            $('#joinGame').on('click', () => {
+                let username = $('#username_2').value;
+                let gameId = $('#gameCode').value;
+                joinGame(username, gameId)
+            });
+
             $('#board').on('click', 'button', (event) => {
                 const cellId = this.id;
                 socket.emit('makeMove', { gameId, cellId });
                 console.log(cellId);
             });
+
+            $('#copy').on('click', (event) => {
+                let url = $('#copyUrl').text();
+                navigator.clipboard.writeText(url);
+               
+            });
+
+            
         });
 
 
