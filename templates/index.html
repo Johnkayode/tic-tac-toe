@@ -52,17 +52,17 @@
             outline: none;
         }
 
-        #start,
-        #share
-        {
+        .page {
             max-width: 400px;
         }
 
+        #join h2,
         #start h2 {
             text-align: center;
             color: #fff;
         }
 
+        #join input,
         #start input {
             width: 100%;
             padding: 8px;
@@ -75,13 +75,13 @@
             font-family: 'Space Mono', monospace;
         }
 
-
+        #join input:focus-within,
         #start input:focus-within{
             outline: none;
             border: 2px solid green;
         }
 
-
+        #join button,
         #start button {
             background-color: #4caf50;
             color: #fff;
@@ -92,6 +92,7 @@
             font-family: 'Space Mono', monospace;
         }
 
+        #join button:hover,
         #start button:hover {
             background-color: #45a049;
         }
@@ -111,23 +112,19 @@
     </section>
 
     <section id="share" class="page" hidden>
-       
-        <p>Copy and share URL to join game</p>
+        <p>Copy and share URL to other player to join game</p>
         <div id="copyGameUrl">
-            <span id="copyUrl">https://localhost:3000?id=3ae2l</span>
+            <span id="copyUrl"></span>
             <i class="fa-regular fa-copy" id="copy"></i>
         </div>
-       
-  
-       
     </section>
 
     <section id="join" class="page" hidden>
-        <input type="text" id="gameCode" placeholder="Enter Game ID" required>
+        <h2>Tic-Tac-Toe</h2> 
+        <input type="text" id="gameCode" hidden>
         <input type="text" id="username_2" placeholder="Enter username" required>
         <button id="joinGame">Join Game</button>  
     </section>
-
 
     <section id="board" class="page" hidden>
         <button id="r1c1">X</button><button id="r1c2"></button><button id="r1c3"></button>
@@ -151,9 +148,11 @@
 
         socket.on('gameCreated', (data) => {
             gameId = data.gameId;
+            let _url = `${url}?id=${gameId}`;
             $('.page').hide()
             $('#share').show()
-            $('copyUrl').text = `${url}?id=${gameId}`;
+            $('#copyUrl').text(_url);
+            
             console.log(`Game created with code: ${gameId}`);
         });
 
@@ -163,7 +162,7 @@
 
             $('.page').hide()
             $('#board').show()
-            console.log(`${username} joined game with code: ${gameId}`);
+            console.log(`${username} joined game`);
         });
 
         socket.on('invalidGame', () => {
@@ -203,10 +202,11 @@
             });
 
             $('#joinGame').on('click', () => {
-                let username = $('#username_2').value;
-                let gameId = $('#gameCode').value;
+                let username = $('#username_2').val();
+                let gameId = $('#gameCode').val();
                 joinGame(username, gameId)
             });
+
 
             $('#board').on('click', 'button', (event) => {
                 const cellId = this.id;
