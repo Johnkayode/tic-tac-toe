@@ -22,7 +22,12 @@
         }
 
         .page{
-            margin: 50px auto;
+            margin: 50px auto; 
+            max-width: 400px;
+        }
+
+        #message {
+            color: #4caf50;
         }
 
         #copyGameUrl {
@@ -37,23 +42,34 @@
             cursor: pointer;
         }
 
-        #board {
+        /* #board {
             width: 450px;
-        }
+        } 
         #board button {
             height: 150px;
             width: 150px;
             float: left;
             font-size: 2.5rem;
             cursor: pointer;
+        } */
+        #board{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0px;
+            max-width: 450px;
+            text-align: center;
+        }
+        #board button {
+            width: 100%;
+            height: 150px;
+            font-size: 2.5rem;
+            /* background-color: #fff;
+            border: 2px solid #ccc; */
+            cursor: pointer;
         }
         #board button:focus{
             border: none;
             outline: none;
-        }
-
-        .page {
-            max-width: 400px;
         }
 
         #join h2,
@@ -97,8 +113,26 @@
             background-color: #45a049;
         }
 
+
         #share p{
             color: #fff;
+        }
+
+        #game {
+            align-items: center;
+        }
+
+        #game .players {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 450px;
+            color: #fff;
+            padding: 40px 0px;
+        }
+
+        #game img{
+            max-width: 50px;
         }
 
         
@@ -126,17 +160,36 @@
         <button id="joinGame">Join Game</button>  
     </section>
 
-    <section id="board" class="page" hidden>
-        <button id="r1c1">X</button><button id="r1c2"></button><button id="r1c3"></button>
-        <button id="r2c1">O</button><button id="r2c2">X</button><button id="r2c3">O</button>
-        <button id="r3c1">X</button><button id="r3c2">O</button><button id="r3c3">O</button>
+    <section id="game" class="page" hidden>
+        <div class="players">
+            <div>
+                <img src="" id="player1_img">
+                <p id="player1"></p>
+            </div>
+            <div>
+                <img src="" id="player2_img">
+                <p id="player2"></p>
+            </div>
+        </div>
+        <p id="currentGameId" hidden></p>
+        
+        <p id="message"></p>
+        <div id="board" class="">
+            <button id="r1c1"></button><button id="r1c2"></button><button id="r1c3"></button>
+            <button id="r2c1"></button><button id="r2c2"></button><button id="r2c3"></button>
+            <button id="r3c1"></button><button id="r3c2"></button><button id="r3c3"></button>
+        </div>
+       
     </section>
   
     <script>
         const url = "http://localhost:3000"
         const socket = io(url);
         
-        let gameId = "";
+        let gameId;
+        let currentPlayer;
+        let move;
+        let isPlayerTurn;
 
         function createGame(username){
             socket.emit('createGame', { username: username } );
@@ -146,23 +199,43 @@
             socket.emit('joinGame', { username: username, gameId: gameId })
         }
 
+        function renderTurnMessage() {
+            if (!isPlayerTurn) { // If not player's turn disable the board
+                $("#message").text("Your opponent's turn");
+                $("#board button").attr("disabled", true);
+            } else { // Enable it otherwise
+                $("#message").text("Your turn.");
+                $("#board button").removeAttr("disabled");
+            }
+        }
+
         socket.on('gameCreated', (data) => {
             gameId = data.gameId;
             let _url = `${url}?id=${gameId}`;
+
             $('.page').hide()
             $('#share').show()
             $('#copyUrl').text(_url);
-            
             console.log(`Game created with code: ${gameId}`);
         });
 
         socket.on('gameJoined', (data) => {
-            username = data.username
-            gameId = data.gameId;
+            player1 = data.player1;
+            player2 = data.player2;
 
             $('.page').hide()
-            $('#board').show()
-            console.log(`${username} joined game`);
+            $('#game').show()
+
+            renderTurnMessage()
+            // update game details
+            $('#currentGameId').text(gameId)
+            $('#player1').text(player1)
+            $('#player1_img').attr('src', 'https://robohash.org/' + player1);
+            $('#player2').text(player2)
+            $('#player2_img').attr('src', 'https://robohash.org/' + player2);
+
+            
+            console.log(`${player2} joined game`);
         });
 
         socket.on('invalidGame', () => {
@@ -170,8 +243,15 @@
         });
 
         socket.on('moveMade', (data) => {
-            // Handle the move on the Tic-Tac-Toe board
-            console.log(`Move made: ${JSON.stringify(data)}`);
+            let symbol = data.symbol;
+            // let gameId = $('currentGameId').text();
+            console.log(data.symbol, data.cellId)
+            // // Handle the move on the Tic-Tac-Toe board
+            $("#" + data.cellId).text(symbol);
+            isPlayerTurn = !isPlayerTurn;
+            renderTurnMessage()
+
+            // console.log(`Move made: ${data}`);
         });
 
 
@@ -197,30 +277,33 @@
             PageLoad()
 
             $('#startGame').on('click', () => {
-                let username = document.getElementById('username').value;
-                createGame(username)
+                let username = document.getElementById('username').value.toString();
+                currentPlayer = username;
+                move = 'X';
+                createGame(username);
+                isPlayerTurn = true;
             });
 
             $('#joinGame').on('click', () => {
-                let username = $('#username_2').val();
-                let gameId = $('#gameCode').val();
-                joinGame(username, gameId)
+                let username = $('#username_2').val().toString();
+                gameId = $('#gameCode').val();
+                currentPlayer = username;
+                move = 'O';
+                joinGame(username, gameId);
+                isPlayerTurn = false;
             });
 
-
-            $('#board').on('click', 'button', (event) => {
-                const cellId = this.id;
-                socket.emit('makeMove', { gameId, cellId });
-                console.log(cellId);
+            $('#board').on('click', 'button', function(event) {
+                let cellId = this.id;
+                socket.emit('makeMove', { gameId, cellId, symbol: move });
+                console.log(`${currentPlayer} played ${move} at ${cellId}`);
             });
 
             $('#copy').on('click', (event) => {
                 let url = $('#copyUrl').text();
-                navigator.clipboard.writeText(url);
-               
+                console.log("URL copied", url)
+                navigator.clipboard.writeText(url);  
             });
-
-            
         });
 
 
