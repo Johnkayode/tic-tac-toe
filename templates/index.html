@@ -30,6 +30,10 @@
             color: #4caf50;
         }
 
+        #warning {
+            color: rgb(253, 25, 25);
+        }
+
         #copyGameUrl {
             background-color: #fff;
             padding: 10px 12px;
@@ -155,6 +159,7 @@
 
     <section id="join" class="page" hidden>
         <h2>Tic-Tac-Toe</h2> 
+        <p id="warning"></p>
         <input type="text" id="gameCode" hidden>
         <input type="text" id="username_2" placeholder="Enter username" required>
         <button id="joinGame">Join Game</button>  
@@ -267,6 +272,12 @@
             console.log(`Game created with code: ${gameId}`);
         });
 
+        socket.on('gameFull', (data) => {
+            $("#joinGame").attr("disabled", true);
+            $('#warning').text("Game is Full");
+            console.log(data)
+        })
+
         socket.on('gameJoined', (data) => {
             player1 = data.player1;
             player2 = data.player2;
@@ -292,13 +303,13 @@
 
         socket.on('moveMade', (data) => {
             let symbol = data.symbol;
-            // let gameId = $('currentGameId').text();
             
             // Handle the move on the Tic-Tac-Toe board
             $("#" + data.cellId).text(symbol);
             isPlayerTurn = !isPlayerTurn;
 
             state = checkGameState()
+
             if (state === "X" || state === "O") {
                 $("#board button").attr("disabled", true);
                 if (state != move){

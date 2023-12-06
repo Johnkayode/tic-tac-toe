@@ -48,16 +48,20 @@ io.on('connection', (socket) => {
         let gameData = await redis_client.get(gameId);
 
         if (gameData) {
-            socket.join(gameId);
-
             let data = JSON.parse(gameData);
-            data.player2 = { username: username, socketId: socket.id};
-            redis_client.set(gameId, JSON.stringify(data));
-            io.to(gameId).emit('gameJoined', { 
-                gameId: gameId, 
-                player1: data.player1.username, 
-                player2: data.player2.username,
-            });
+            if (data.player1 && data.player2){
+                socket.emit('gameFull')
+            }
+            else {
+                socket.join(gameId);
+                data.player2 = { username: username, socketId: socket.id};
+                redis_client.set(gameId, JSON.stringify(data));
+                io.to(gameId).emit('gameJoined', { 
+                    gameId: gameId, 
+                    player1: data.player1.username, 
+                    player2: data.player2.username,
+                });
+            }
         } else {
             socket.emit('invalidGame');
         }
