@@ -209,6 +209,54 @@
             }
         }
 
+        function renderBoardToArray() {
+            let board = [[], [], []]
+
+            $("#board button").each(function() {
+                let cellId = $(this).attr("id")
+                let rc = cellId.split(/[rc]/).filter(Boolean)
+            
+                let rowId = parseInt(rc[0]) - 1
+                let colId = parseInt(rc[1]) - 1
+              
+                board[rowId][colId] = $(this).text() || " ";
+            });
+
+            return board
+        }
+
+        function checkGameState() {
+            var board = renderBoardToArray()
+            let gameOver = false;
+            // winning combination of the cells
+            var rows = [
+                [board[0][0], board[0][1], board[0][2]], // row 1
+                [board[1][0], board[1][1], board[1][2]], // row 2
+                [board[2][0], board[2][1], board[2][2]], // row 3
+                [board[0][0], board[1][0], board[2][0]], // col 1
+                [board[0][1], board[1][1], board[2][1]], // col 2
+                [board[0][2], board[1][2], board[2][2]], // col 3
+                [board[2][0], board[1][1], board[0][2]], // Primary diagonal
+                [board[0][0], board[1][1], board[2][2]], // Secondary diagonal
+            ];
+            for (let index = 0; index < rows.length; index++) {
+                const row = rows[index];
+               
+                if (row.every(char => char === "X")) {
+                    return "X";
+                }
+                else if (row.every(char => char === "O")) {
+                    return "O";
+                }
+            }
+
+            if (board.flat().every(cell => cell !== ' ')) {
+                return 'Draw'; // The game is a draw
+            }
+
+            return null  
+        }
+
         socket.on('gameCreated', (data) => {
             gameId = data.gameId;
             let _url = `${url}?id=${gameId}`;
@@ -245,13 +293,29 @@
         socket.on('moveMade', (data) => {
             let symbol = data.symbol;
             // let gameId = $('currentGameId').text();
-            console.log(data.symbol, data.cellId)
-            // // Handle the move on the Tic-Tac-Toe board
+            
+            // Handle the move on the Tic-Tac-Toe board
             $("#" + data.cellId).text(symbol);
             isPlayerTurn = !isPlayerTurn;
-            renderTurnMessage()
 
-            // console.log(`Move made: ${data}`);
+            state = checkGameState()
+            if (state === "X" || state === "O") {
+                $("#board button").attr("disabled", true);
+                if (state != move){
+                    $("#message").text("YOU LOSE!");
+                } else {
+                    $("#message").text("YOU WIN!")
+                }
+                
+            }
+            else if (state === "Draw") {
+                $("#board button").attr("disabled", true);
+                $("#message").text("DRAW!");
+            }
+            else {
+                renderTurnMessage()
+            }
+            
         });
 
 
